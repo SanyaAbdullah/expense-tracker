@@ -6,11 +6,15 @@ import {
   NotificationRecord,
   DEFAULT_PREFERENCES,
 } from "@/types/notification";
+import { BudgetSettings, DEFAULT_BUDGET_SETTINGS } from "@/types/budget";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import ExpenseForm from "./ExpenseForm";
 import ExpenseList from "./ExpenseList";
 import NotificationSettings from "./NotificationSettings";
 import NotificationHistory from "./NotificationHistory";
+import BudgetAlerts from "./BudgetAlerts";
+import BudgetProgress from "./BudgetProgress";
+import BudgetSettingsPanel from "./BudgetSettings";
 
 export default function Dashboard() {
   const [expenses, setExpenses, isLoaded] = useLocalStorage<Expense[]>(
@@ -25,6 +29,10 @@ export default function Dashboard() {
     "notification-history",
     []
   );
+  const [budgetSettings] = useLocalStorage<BudgetSettings>(
+    "budget-settings",
+    DEFAULT_BUDGET_SETTINGS
+  );
 
   const addExpense = (expense: Expense) => {
     setExpenses([expense, ...expenses]);
@@ -35,6 +43,13 @@ export default function Dashboard() {
   };
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+  // Filter to current month for budget calculations
+  const now = new Date();
+  const currentMonthExpenses = expenses.filter((e) => {
+    const d = new Date(e.date + "T00:00:00");
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
 
   const sendDigest = () => {
     const tracked =
@@ -82,6 +97,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <BudgetAlerts expenses={currentMonthExpenses} budgetSettings={budgetSettings} />
+
       <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
@@ -106,6 +123,8 @@ export default function Dashboard() {
 
       <ExpenseForm onAdd={addExpense} />
       <ExpenseList expenses={expenses} onDelete={deleteExpense} />
+      <BudgetProgress expenses={currentMonthExpenses} budgetSettings={budgetSettings} />
+      <BudgetSettingsPanel />
       <NotificationSettings />
       <NotificationHistory />
     </div>
